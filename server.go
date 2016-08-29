@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/flynn/flynn/discoverd/client"
 	"github.com/flynn/flynn/pkg/httphelper"
 	"github.com/flynn/flynn/pkg/postgres"
 	"github.com/flynn/flynn/pkg/random"
@@ -26,16 +25,12 @@ WHERE pg_stat_activity.datname = $1
   AND pid <> pg_backend_pid();`
 )
 
-var serviceName = os.Getenv("SERVICE_NAME")
 var serviceUser = os.Getenv("PGUSER")
 var serviceHost = os.Getenv("PGHOST")
 var servicePass = os.Getenv("PGPASSWORD")
 var systemPgsql = os.Getenv("FLYNN_POSTGRES")
 
 func init() {
-	if serviceName == "" {
-		panic("SERVIE_HOST must to set to the service name to register with discoverd")
-	}
 	if serviceUser == "" {
 		serviceUser = "flynn"
 	}
@@ -62,6 +57,9 @@ func main() {
 			Database: "postgres",
 		},
 	})
+	if err != nil {
+		shutdown.Fatal(err)
+	}
 	db := postgres.New(pgxpool, nil)
 	api := &pgAPI{db}
 
@@ -76,13 +74,7 @@ func main() {
 	}
 	addr := ":" + port
 
-	hb, err := discoverd.AddServiceAndRegister(serviceName, addr)
-	if err != nil {
-		shutdown.Fatal(err)
-	}
-	shutdown.BeforeExit(func() { hb.Close() })
-
-	handler := httphelper.ContextInjector(serviceName, httphelper.NewRequestLogger(router))
+	handler := httphelper.ContextInjector("pg-external", httphelper.NewRequestLogger(router))
 	shutdown.Fatal(http.ListenAndServe(addr, handler))
 }
 
