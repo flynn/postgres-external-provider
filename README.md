@@ -21,7 +21,7 @@ $ flynn create pg-external
 $ flynn env set PGHOST="<external database hostname or IP>" PGUSER="flynn" PGPASSWORD="<database admin pass>" SERVICE_NAME="pg-external"
 $ flynn route remove $(flynn route | tail -1 | tr -s ' ' | cut -d" " -f3)
 $ git push flynn master
-$ flynn provider add pg-external http://pg-external-web.discoverd/databases
+$ flynn provider add pg-external http://pg-external-web.discoverd:8080/databases
 ```
 
 Usage
